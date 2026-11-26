@@ -1,6 +1,22 @@
-# Helix Voice SDK for Python
+<p align="center">
+  <img src="https://docs.helixvoice.net/helix-voice-touch-icon.png" alt="Helix Voice" width="64">
+</p>
 
-Use the Helix Voice developer API to generate speech, transcribe audio, and manage voices from a Python service.
+<h1 align="center">Helix Voice SDK for Python</h1>
+
+<p align="center">
+  Generate speech, transcribe audio, and manage voices from your Python application.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/helix-voice/"><img src="https://img.shields.io/pypi/v/helix-voice" alt="PyPI version"></a>
+</p>
+
+<p align="center">
+  <a href="https://docs.helixvoice.net/">Developer Docs</a> ·
+  <a href="examples/">Examples</a> ·
+  <a href="https://pypi.org/project/helix-voice/#history">Version History</a>
+</p>
 
 ## Install
 
@@ -10,18 +26,34 @@ Requires Python 3.9 or later. Install into your project's virtual environment.
 python -m pip install helix-voice==0.2.0
 ```
 
-Import the SDK as `helixvoice`.
-
 ## Quickstart
 
-With the SDK installed, run the examples from a checkout of this repository.
+Set `HELIXVOICE_API_KEY` to a server-side API key with `voices:read`, `speech:write`, and `generations:read` scopes.
 
 ```sh
 export HELIXVOICE_API_KEY='YOUR_API_KEY'
-python examples/speech.py
 ```
 
-The [speech example](examples/speech.py) chooses the first available voice returned by `client.voices.list()`, calls `client.speech.save()`, and writes `speech.wav`. It prints the voice and generation IDs.
+Save this as `speech.py` and run `python speech.py`.
+
+```python
+from helixvoice import HelixVoiceClient
+
+with HelixVoiceClient() as client:
+    voices = client.voices.list()
+    if not voices:
+        raise SystemExit("No voices are available to this account.")
+
+    generation = client.speech.save(
+        input="Hello from Helix Voice.",
+        voice=voices[0].id,
+        output="speech.wav",
+    )
+
+print(f"Saved speech.wav (generation {generation.id})")
+```
+
+On success, `speech.wav` is saved in your current directory and the generation ID is printed. The [repository example](examples/speech.py) also supports a custom API URL for staging or tests.
 
 ## API keys and account access
 
