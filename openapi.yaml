@@ -1,0 +1,499 @@
+openapi: 3.0.3
+info:
+  title: Helix Voice API
+  version: 1.0.0
+  description: Versioned developer speech API and anonymous product preview.
+  contact:
+    name: Helix Voice
+    url: https://docs.helixvoice.net
+  license:
+    name: LicenseRef-Proprietary
+servers:
+  - url: https://api.helixvoice.net
+    description: Production
+security:
+  - ApiKey: []
+tags:
+  - name: Capabilities
+    description: Capabilities operations for an authenticated account
+  - name: Voices
+    description: Voices operations for an authenticated account
+  - name: Speech
+    description: Speech operations for an authenticated account
+  - name: Transcriptions
+    description: Transcriptions operations for an authenticated account
+  - name: Generations
+    description: Generations operations for an authenticated account
+  - name: Preview
+    description: Anonymous short audio preview
+paths:
+  /v1/capabilities:
+    get:
+      tags:
+        - Capabilities
+      operationId: getCapabilities
+      summary: Read capabilities and limits
+      x-api-key-scope: capabilities:read
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilitiesResponse"
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  /v1/voices:
+    get:
+      tags:
+        - Voices
+      operationId: listVoices
+      summary: List public and owned voices
+      x-api-key-scope: voices:read
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoicesResponse"
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+    post:
+      tags:
+        - Voices
+      operationId: cloneVoice
+      summary: Create an owned private voice
+      x-api-key-scope: voices:write
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CloneVoiceRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceResponse"
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  "/v1/voices/{id}":
+    parameters:
+      &a1
+      - $ref: "#/components/parameters/ResourceId"
+    delete:
+      tags:
+        - Voices
+      operationId: deleteVoice
+      summary: Delete an owned private voice
+      x-api-key-scope: voices:write
+      responses:
+        "204":
+          &a2
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  /v1/audio/speech:
+    post:
+      tags:
+        - Speech
+      operationId: generateSpeech
+      summary: Generate speech and return its record
+      x-api-key-scope: speech:write
+      description: Download the WAV separately using the generation ID and
+        generations:read scope.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpeechRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationResponse"
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  /v1/audio/transcriptions:
+    post:
+      tags:
+        - Transcriptions
+      operationId: createTranscription
+      summary: Transcribe an uploaded audio file
+      x-api-key-scope: transcriptions:write
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/TranscriptionRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionResponse"
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  /v1/generations:
+    get:
+      tags:
+        - Generations
+      operationId: listGenerations
+      summary: List the latest unexpired generations
+      x-api-key-scope: generations:read
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationsResponse"
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  "/v1/generations/{id}/audio":
+    parameters: *a1
+    get:
+      tags:
+        - Generations
+      operationId: downloadGenerationAudio
+      summary: Download a generation as WAV
+      x-api-key-scope: generations:read
+      responses:
+        "200":
+          description: WAV audio
+          content:
+            &a3
+            audio/wav:
+              schema:
+                &a6
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  "/v1/generations/{id}":
+    parameters: *a1
+    delete:
+      tags:
+        - Generations
+      operationId: deleteGeneration
+      summary: Delete an owned generation and its audio
+      x-api-key-scope: generations:write
+      responses:
+        "204": *a2
+        "400":
+          $ref: "#/components/responses/ApiError"
+        default:
+          $ref: "#/components/responses/ApiError"
+  /v1/audio/preview:
+    post:
+      tags:
+        - Preview
+      operationId: createPreview
+      summary: Generate a short anonymous WAV preview
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreviewRequest"
+      responses:
+        "200":
+          description: WAV audio
+          content: *a3
+          headers:
+            X-TTS-Preview-Cache:
+              schema:
+                type: string
+                enum:
+                  - HIT
+                  - MISS
+        "400":
+          $ref: "#/components/responses/PreviewError"
+        default:
+          $ref: "#/components/responses/PreviewError"
+components:
+  securitySchemes:
+    ApiKey:
+      type: http
+      scheme: bearer
+      description: Scoped Helix Voice server API key.
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      description: ID returned by Helix Voice.
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    ApiError:
+      description: API error; gateways may return another content type.
+      headers:
+        &a5
+        X-Request-ID:
+          schema:
+            &a4
+            type: string
+        Retry-After:
+          description: Retry delay or HTTP date, when available.
+          schema: *a4
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorEnvelope"
+    PreviewError:
+      description: Anonymous preview error; gateways may return another content type.
+      headers: *a5
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PreviewErrorEnvelope"
+  schemas:
+    SpeechRequest:
+      type: object
+      required:
+        - input
+        - voice
+      properties:
+        input:
+          type: string
+          minLength: 1
+        voice:
+          type: string
+          minLength: 1
+    PreviewRequest:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          type: string
+          minLength: 1
+          description: Default limit is 80 Unicode characters.
+        voice:
+          type: string
+          description: Enabled public preview voice ID.
+      additionalProperties: false
+    CloneVoiceRequest:
+      type: object
+      required:
+        - file
+        - name
+        - language
+        - transcript
+        - consent
+      properties:
+        file: *a6
+        name: *a4
+        language:
+          type: string
+          enum:
+            - zh-CN
+            - en-US
+        transcript: *a4
+        consent:
+          type: boolean
+          description: Must be true. Obtain permission from the speaker before uploading.
+    TranscriptionRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file: *a6
+        language:
+          type: string
+          enum:
+            - zh-CN
+            - auto
+          default: zh-CN
+          description: Both values use Mandarin transcription.
+    Capabilities:
+      type: object
+      required:
+        - enabled
+        - model
+        - sampleRate
+        - maxTextCharacters
+        - maxUploadBytes
+        - maxTranscriptionSeconds
+        - transcriptionLanguages
+        - userDailyLimit
+        - requestsPerMinute
+        - historyDays
+      properties:
+        enabled:
+          &a8
+          type: boolean
+        model: *a4
+        sampleRate:
+          &a7
+          type: integer
+          format: int32
+        maxTextCharacters: *a7
+        maxUploadBytes: *a7
+        maxTranscriptionSeconds: *a7
+        transcriptionLanguages:
+          type: array
+          items: *a4
+        userDailyLimit: *a7
+        requestsPerMinute: *a7
+        historyDays: *a7
+    Voice:
+      type: object
+      required:
+        - id
+        - name
+        - language
+        - locale
+        - gender
+        - description
+        - tags
+        - color
+        - featured
+        - owned
+        - referenceSeconds
+      properties:
+        id: *a4
+        name: *a4
+        language: *a4
+        locale: *a4
+        gender: *a4
+        description: *a4
+        tags:
+          type: array
+          items: *a4
+        color: *a4
+        featured: *a8
+        owned: *a8
+        referenceSeconds:
+          type: number
+          format: double
+    Generation:
+      type: object
+      required:
+        - id
+        - text
+        - voice
+        - durationMs
+        - createdAt
+        - audioPath
+      properties:
+        id: *a4
+        text: *a4
+        voice: *a4
+        durationMs:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        audioPath:
+          type: string
+          description: Server-relative audio path.
+    Transcription:
+      type: object
+      required:
+        - text
+      properties:
+        text: *a4
+    CapabilitiesResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Capabilities"
+    VoicesResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Voice"
+    VoiceResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Voice"
+    GenerationResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Generation"
+    GenerationsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Generation"
+          maxItems: 100
+    TranscriptionResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Transcription"
+    ApiErrorEnvelope:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: "#/components/schemas/ApiErrorDetail"
+    ApiErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+        - requestId
+      properties:
+        code: *a4
+        message: *a4
+        requestId: *a4
+    PreviewErrorEnvelope:
+      type: object
+      required:
+        - message
+      properties:
+        code:
+          oneOf:
+            - *a7
+            - *a4
+        message: *a4
+        transactionId: *a4
