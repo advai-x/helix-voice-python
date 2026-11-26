@@ -1,9 +1,8 @@
-"""Server-side developer API and independent anonymous preview client."""
+"""Server-side Helix Voice developer API client."""
 
 import json
 import mimetypes
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Literal, Optional, Union
@@ -42,14 +41,8 @@ class SpeechSaveError(Exception):
         self.generation = generation
 
 
-@dataclass(frozen=True)
-class PreviewResult:
-    audio: bytes
-    cache: Optional[str]
-
-
 class _Transport:
-    def __init__(self, base_url: str, timeout: float, api_key: Optional[str] = None):
+    def __init__(self, base_url: str, timeout: float, api_key: str):
         url = urlsplit(base_url)
         if (url.scheme not in ("http", "https") or not url.hostname
                 or url.username is not None or url.query or url.fragment):
@@ -62,9 +55,10 @@ class _Transport:
         self.api_key = api_key
 
     def request(self, method, route, *, payload=None, fields=None, result="json"):
-        headers = {"Accept": "audio/wav" if result == "wav" else "application/json"}
-        if self.api_key:
-            headers["Authorization"] = "Bearer " + self.api_key
+        headers = {
+            "Accept": "audio/wav" if result == "wav" else "application/json",
+            "Authorization": "Bearer " + self.api_key,
+        }
         body = None
         if payload is not None:
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -111,7 +105,7 @@ class _Transport:
                 data = response.read(_MAX_WAV + 1)
                 if len(data) > _MAX_WAV:
                     raise failure("WAV exceeds the SDK response size limit")
-                return PreviewResult(data, response.headers.get("X-TTS-Preview-Cache"))
+                return data
             if result == "json" and content_type == "application/json":
                 try:
                     data = response.read(_MAX_JSON + 1)
@@ -193,7 +187,7 @@ class _Generations:
         return [Generation.model_validate(item) for item in self._http.request("GET", "/v1/generations")]
 
     def download(self, id: str) -> bytes:
-        return self._http.request("GET", "/v1/generations/" + _segment(id) + "/audio", result="wav").audio
+        return self._http.request("GET", "/v1/generations/" + _segment(id) + "/audio", result="wav")
 
     def delete(self, id: str) -> None:
         self._http.request("DELETE", "/v1/generations/" + _segment(id), result="empty")
@@ -240,26 +234,6 @@ class HelixVoiceClient:
         self.generations = _Generations(self._http)
         self.speech = _Speech(self._http, self.generations)
         self.transcriptions = _Transcriptions(self._http)
-
-    def close(self):
-        self._http.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        self.close()
-
-
-class HelixVoicePreviewClient:
-    def __init__(self, *, base_url: str = BASE_URL, timeout: float = 180):
-        self._http = _Transport(base_url, timeout)
-
-    def generate(self, *, input: str, voice: Optional[str] = None) -> PreviewResult:
-        payload = {"input": input}
-        if voice is not None:
-            payload["voice"] = voice
-        return self._http.request("POST", "/v1/audio/preview", payload=payload, result="wav")
 
     def close(self):
         self._http.close()

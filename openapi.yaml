@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Helix Voice API
   version: 1.0.0
-  description: Versioned developer speech API and anonymous product preview.
+  description: Versioned developer speech API for authenticated accounts.
   contact:
     name: Helix Voice
     url: https://docs.helixvoice.net
@@ -25,8 +25,6 @@ tags:
     description: Transcriptions operations for an authenticated account
   - name: Generations
     description: Generations operations for an authenticated account
-  - name: Preview
-    description: Anonymous short audio preview
 paths:
   /v1/capabilities:
     get:
@@ -185,7 +183,6 @@ paths:
         "200":
           description: WAV audio
           content:
-            &a3
             audio/wav:
               schema:
                 &a6
@@ -209,34 +206,6 @@ paths:
           $ref: "#/components/responses/ApiError"
         default:
           $ref: "#/components/responses/ApiError"
-  /v1/audio/preview:
-    post:
-      tags:
-        - Preview
-      operationId: createPreview
-      summary: Generate a short anonymous WAV preview
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PreviewRequest"
-      responses:
-        "200":
-          description: WAV audio
-          content: *a3
-          headers:
-            X-TTS-Preview-Cache:
-              schema:
-                type: string
-                enum:
-                  - HIT
-                  - MISS
-        "400":
-          $ref: "#/components/responses/PreviewError"
-        default:
-          $ref: "#/components/responses/PreviewError"
 components:
   securitySchemes:
     ApiKey:
@@ -256,7 +225,6 @@ components:
     ApiError:
       description: API error; gateways may return another content type.
       headers:
-        &a5
         X-Request-ID:
           schema:
             &a4
@@ -268,13 +236,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ApiErrorEnvelope"
-    PreviewError:
-      description: Anonymous preview error; gateways may return another content type.
-      headers: *a5
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/PreviewErrorEnvelope"
   schemas:
     SpeechRequest:
       type: object
@@ -288,19 +249,6 @@ components:
         voice:
           type: string
           minLength: 1
-    PreviewRequest:
-      type: object
-      required:
-        - input
-      properties:
-        input:
-          type: string
-          minLength: 1
-          description: Default limit is 80 Unicode characters.
-        voice:
-          type: string
-          description: Enabled public preview voice ID.
-      additionalProperties: false
     CloneVoiceRequest:
       type: object
       required:
@@ -487,14 +435,3 @@ components:
         code: *a4
         message: *a4
         requestId: *a4
-    PreviewErrorEnvelope:
-      type: object
-      required:
-        - message
-      properties:
-        code:
-          oneOf:
-            - *a7
-            - *a4
-        message: *a4
-        transactionId: *a4
