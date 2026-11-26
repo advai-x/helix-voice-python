@@ -7,7 +7,8 @@ info:
     name: Helix Voice
     url: https://docs.helixvoice.net
   license:
-    name: LicenseRef-Proprietary
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
 servers:
   - url: https://api.helixvoice.net
     description: Production
