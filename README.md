@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://docs.helixvoice.net/helix-voice-touch-icon.png" alt="Helix Voice" width="64">
+  <img src="https://raw.githubusercontent.com/advai-x/helix-voice-python/main/assets/helix-voice-readme-banner.webp" alt="Helix Voice SDK for Python with text to speech, speech to text, voice library, and voice cloning" width="100%">
 </p>
 
 <h1 align="center">Helix Voice SDK for Python</h1>
