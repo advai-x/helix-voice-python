@@ -7,7 +7,7 @@ Use the Helix Voice developer API to generate speech, transcribe audio, and mana
 Requires Python 3.9 or later. Install into your project's virtual environment.
 
 ```sh
-python -m pip install helix-voice==0.1.0
+python -m pip install helix-voice==0.2.0
 ```
 
 Import the SDK as `helixvoice`.
